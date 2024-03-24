@@ -2,9 +2,8 @@
 ;;; Commentary:
 ;;; Code:
 
-;;; -*- lexical-binding: t; -*-
 (let ((normal-gc-cons-threshold (* 512 1024 1024)) ;; 512 MB
-      (init-gc-cons-threshold most-positive-fixnum))
+      (init-gc-cons-threshold most-positive-fixnum)) 
   (setq gc-cons-threshold init-gc-cons-threshold)
   (add-hook 'emacs-startup-hook
 	    (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
@@ -27,17 +26,8 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/")    t)
 (add-to-list 'package-archives '("elpa"  . "https://elpa.gnu.org/packages/") t)
 
-;; (package-initialize)
-;; ;; Install use-package if not installed yet.
-;; (unless (package-installed-p 'use-package)
-;;   (package-refresh-contents)
-;;   (package-install 'use-package))
-;; (require 'use-package)
-;; (setq use-package-always-ensure t)
-
 (mapc #'(lambda (add) (add-to-list 'load-path add))
       (eval-when-compile
-
 	(package-initialize)
 	;; Install use-package if not installed yet.
 	(unless (package-installed-p 'use-package)
@@ -46,7 +36,8 @@
 	(require 'use-package-ensure)
 	(setq use-package-always-ensure t)
 	;; (setq use-package-always-defer t)
-	(setq use-package-verbose t)
+	(setq use-package-verbose t
+	      native-comp-async-report-warnings-errors nil)
 	(let ((package-user-dir-real (file-truename package-user-dir)))
 	  ;; The reverse is necessary, because outside we mapc
 	  ;; add-to-list element-by-element, which reverses.
@@ -64,7 +55,6 @@
   (require 'use-package))
 (require 'bind-key)
 
-;; (setq gc-cons-threshold (* 512 1024 1024)) ;; 512 MB
 (setq gc-cons-percentage 0.2) ;;
 (setq read-process-output-max (* 1024 1024)) ;; 1 MB
 
@@ -109,8 +99,6 @@
 ;; Set the variable pitch face
 (set-face-attribute 'variable-pitch nil :font nlif-m/font :height efs/default-variable-font-size :weight 'regular)
 
-(load-theme 'wombat)
-
 (setq make-backup-files        nil)
 (setq auto-save-default        nil)
 (setq auto-save-list-file-name nil) ;; я так привык... хотите включить - замените nil на t
@@ -138,10 +126,15 @@
 
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-(require  'bs)
-(require  'ibuffer)
-(defalias 'list-buffers 'ibuffer) ;; отдельный список буферов при нажатии C-x C-b
-(global-set-key (kbd "<f2>") 'bs-show) ;; запуск buffer selection кнопкой F2
+(use-package async
+  :demand t
+  :init
+  (async-bytecomp-package-mode 1)
+  (dired-async-mode 1))
+
+(use-package ibuffer
+  :ensure nil
+  :bind (("C-x C-b" . ibuffer)))
 
 (require 'font-lock)
 (global-font-lock-mode             t) ;; включено с версии Emacs-22. На всякий...
@@ -149,62 +142,29 @@
 
 (setq use-package-always-defer t)
 
-(defun nlif-m/dired-in-cwd ()
-  "Open `dired` in current working directory"
-  (interactive)
-  (dired default-directory))
-(keymap-global-set "M-p" 'nlif-m/dired-in-cwd)
-
-(defun nlif-m/open-shell ()
-  "Open $TERMINAL in current directory."
-  (interactive)
-  (let ((p  (start-process "terminal" nil (getenv "TERMINAL"))))
-    (set-process-sentinel p (lambda (process state)
-			      (when (equal state "finished")
-				(kill-process process))))))
-(global-set-key (kbd "<f7>") 'nlif-m/open-shell)
-
-(setq browse-url-generic-program "sender-go")
-(global-set-key (kbd "<f6>") 'browse-url-generic)
-
-(defun nlif-m//trans (start end lang)
-  "A generic function to translate region from START to END to provided LANG."
-  (let ((text (buffer-substring-no-properties start end))
-	(trans-buffer-name "*trans-buffer*"))
-    (let ((trans-buffer (get-buffer-create trans-buffer-name)))
-      (start-process (concat "trans-" lang) trans-buffer "trans" "-t" lang text))))
-
-(defun nlif-m/trans-toru (start end)
-  "Translates text from START to END to russian language."
-  (interactive "r")
-  (nlif-m//trans start end "ru"))
-
-(defun nlif-m/trans-toen (start end)
-  "Translates text from START to END to english language."
-  (interactive "r")
-  (nlif-m//trans start end "en"))
-
-(require 'electric)
-(electric-pair-mode 1)
-(electric-indent-mode 1)
-
-(require 'semantic)
-(require 'semantic/bovine/gcc)
-
-(add-to-list 'semantic-default-submodes 'global-semanticdb-minor-mode)
-(add-to-list 'semantic-default-submodes 'global-semantic-idle-local-symbol-highlight-mode)
-(add-to-list 'semantic-default-submodes 'global-semantic-idle-scheduler-mode)
-(add-to-list 'semantic-default-submodes 'global-semantic-idle-summary-mode)
-
-(semantic-mode 1)
-(global-ede-mode t)
-(ede-enable-generic-projects)
-
-(use-package async
-  :demand t
+(use-package electric
+  :ensure nil
   :init
-  (async-bytecomp-package-mode 1)
-  (dired-async-mode 1))
+  (electric-pair-mode 1)
+  (electric-indent-mode 1)
+  )
+
+(use-package semantic
+  :ensure nil
+  :init
+  (add-to-list 'semantic-default-submodes 'global-semanticdb-minor-mode)
+  (add-to-list 'semantic-default-submodes 'global-semantic-idle-local-symbol-highlight-mode)
+  (add-to-list 'semantic-default-submodes 'global-semantic-idle-scheduler-mode)
+  (add-to-list 'semantic-default-submodes 'global-semantic-idle-summary-mode)
+  (semantic-mode 1)
+  )
+
+(use-package ede
+  :ensure nil
+  :init
+  (global-ede-mode t)
+  (ede-enable-generic-projects)
+  )
 
 ;; Enable vertico
 (use-package vertico
@@ -232,12 +192,13 @@
 	      t t))
 
   (advice-add #'vertico--setup :before #'vertico-resize--minibuffer)
-  
   )
 
 ;; Optionally use the `orderless' completion style.
 (use-package orderless
   :demand t
+  :custom
+  (completion-styles '(orderless-fast partial-completion basic))
   :init
   ;; Configure a custom style dispatcher (see the Consult wiki)
   ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
@@ -259,14 +220,14 @@
 (use-package savehist
   :init
   (savehist-mode))
-
 ;; Enable rich annotations using the Marginalia package
+
 (use-package marginalia
   ;; Bind `marginalia-cycle' locally in the minibuffer.  To make the binding
   ;; available in the *Completions* buffer, add it to the
   ;; `completion-list-mode-map'.
   :bind (:map minibuffer-local-map
-         ("M-A" . marginalia-cycle))
+              ("M-A" . marginalia-cycle))
   ;; The :init section is always executed.
   :init
 
@@ -301,7 +262,7 @@
   ;; mode.  Vertico commands are hidden in normal buffers. This setting is
   ;; useful beyond Vertico.
   (setq read-extended-command-predicate #'command-completion-default-include-p)
- ;; TAB cycle if there are only few candidates
+  ;; TAB cycle if there are only few candidates
   (setq completion-cycle-threshold 3)
 
   ;; Enable indentation+completion using the TAB key.
@@ -310,28 +271,77 @@
 
   ;; Emacs 30 and newer: Disable Ispell completion function. As an alternative,
   ;; try `cape-dict'.
-  (setq text-mode-ispell-word-completion nil))
+  (setq text-mode-ispell-word-completion nil)
+  )
 
 (use-package corfu
-  ;; Optional customizations
-  :after (orderless)
   :demand t
   :custom
-  ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  ;; (corfu-auto t)                 ;; Enable auto completion
-  ;; (corfu-separator ?\s)          ;; Orderless field separator
-  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  (corfu-quit-no-match 'separator) ;; Never quit, even if there is no match
-  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
-  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-  ;; (corfu-scroll-margin 5)        ;; Use scroll margin
+  (corfu-cycle t)
   (corfu-auto t)
-  (corfu-auto-delay 0.1)
   (corfu-auto-prefix 1)
-  (completion-styles '(orderless-fast partial-completion basic))
+  (corfu-auto-delay 0.1)
+  (corfu-popupinfo-delay '(0.5 . 0.2))
+  (corfu-preview-current 'insert) ; insert previewed candidate
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+  :bind
+  (:map corfu-map
+	("M-SPC"      . corfu-insert-separator)
+	("TAB"        . corfu-next)
+	([tab]        . corfu-next)
+	("S-TAB"      . corfu-previous)
+	([backtab]    . corfu-previous)
+	("S-<return>" . corfu-insert)
+	("RET"        . nil))
   :init
-  (global-corfu-mode))
+  (global-corfu-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode)
+  :config
+  (add-hook 'eshell-mode-hook
+	    (lambda () (setq-local corfu-quit-at-boundary t
+				   corfu-quit-no-match t
+				   corfu-auto nil)
+	      (corfu-mode))
+	    nil
+	    t)
+  )
+
+(use-package cape
+  ;; Bind dedicated completion commands
+  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+  :bind (("M-+ p" . completion-at-point) ;; capf
+         ("M-+ t" . complete-tag)        ;; etags
+         ("M-+ d" . cape-dabbrev)        ;; or dabbrev-completion
+         ("M-+ h" . cape-history)
+         ("M-+ f" . cape-file)
+         ("M-+ k" . cape-keyword)
+         ("M-+ s" . cape-elisp-symbol)
+         ("M-+ e" . cape-elisp-block)
+         ("M-+ a" . cape-abbrev)
+         ("M-+ l" . cape-line)
+         ("M-+ w" . cape-dict)
+         ("M-+ :" . cape-emoji)
+         ("M-+ \\" . cape-tex)
+         ("M-+ _" . cape-tex)
+         ("M-+ ^" . cape-tex)
+         ("M-+ &" . cape-sgml)
+         ("M-+ r" . cape-rfc1345))
+  :config
+  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)
+  ;; Ensure that pcomplete does not write to the buffer
+  ;; and behaves as a pure `completion-at-point-function'.
+  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify)
+  :init
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-elisp-block)
+  )
 
 ;; Use Dabbrev with Corfu!
 (use-package dabbrev
@@ -344,10 +354,11 @@
   (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
   (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode))
 
-;; (use-package company)
-
 (use-package cmake-mode
   :defer)
+
+(use-package cmake-font-lock
+  :hook (cmake-mode . cmake-font-lock-mode))
 
 (use-package company-terraform
   :defer
@@ -361,11 +372,14 @@
 
 (use-package company-ansible
   :defer
+  :after (cape)
+  :hook (ansible .
+		 (lambda ()
+		   (add-to-list
+		    'completion-at-point-functions
+		    (cape-company-to-capf 'company-ansible))))
   :config
   (add-to-list 'company-backends 'company-ansible))
-
-(use-package clang-capf
-  :defer)
 
 (use-package which-key
   :defer 1
@@ -400,9 +414,10 @@
   (reverse-im-mode t))
 
 (use-package projectile
+  :defer
   :custom
   (projectile-project-search-path '("~/Code/" "~/golang/" ))
-  :init
+  :config
   (projectile-mode +1)
   (setq projectile-track-known-projects-automatically t)
   :bind (("<f5>" . projectile-compile-project)
@@ -420,7 +435,30 @@
 (use-package iedit
   :defer 5)
 
-(use-package guix)
+(use-package writegood-mode
+  :ensure t
+  :hook ((markdown-mode nroff-mode org-mode
+                        mail-mode
+                        git-commit-mode)
+         . writegood-mode))
+
+(use-package writeroom-mode
+  :ensure t
+  :commands (writeroom-mode global-writeroom-mode)
+  :init
+  (setq writeroom-width 90))
+
+(use-package jinx
+  :unless (eq system-type 'android)
+  :demand t
+  :ensure t
+  :custom
+  (jinx-languages "en ru")
+  :bind ("C-c <deletechar>" . jinx-correct)
+  :init
+  (global-jinx-mode)
+  (add-to-list 'ispell-skip-region-alist '("+begin_src" . "+end_src"))
+  (setopt flyspell-use-meta-tab nil))
 
 (use-package flycheck
   :config (global-flycheck-mode))
@@ -434,6 +472,7 @@
   (yaml-mode . flycheck-yamllint-setup))
 
 (use-package ansible
+  :hook (yaml-mode . ansible)
   :defer 5)
 
 (use-package ansible-doc
@@ -452,57 +491,25 @@
   :defer 5)
 
 (use-package dart-mode
-  :hook (dart-mode . flymake-mode-off)
+  :defer)
+
+(use-package elpy
+  :defer
+  :custom
+  (elpy-test-runner  'elpy-test-pytest-runner)
   :config
-  (when (require 'flycheck nil t)
-    (flycheck-define-checker dart-checker
-      " An extremely fast Python linter, written in Rust.
-
-See URL `https://github.com/charliermarsh/ruff`."
-
-      :command ("dart" "analyze" source)
-      :error-patterns
-      (
-       (error line-start (zero-or-more space) "error" " - " (file-name) ":" line ":" column " - " (message) " - " (id (one-or-more not-newline)) line-end)
-       
-       (warning line-start (zero-or-more space) "warning" " - " (file-name) ":" line ":" column " - " (message) " - " (id (one-or-more not-newline)) line-end)
-       )
-      :modes dart-mode)
-
-    (add-to-list 'flycheck-checkers 'dart-checker))
-  )
-
-;; (use-package elpy
-;;   :defer
-;;   :custom
-;;   (elpy-test-runner  'elpy-test-pytest-runner)
-;;   :config
-;;   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-;;   (when (require 'flycheck nil t)
-;;     (flycheck-define-checker python-ruff
-;;       " An extremely fast Python linter, written in Rust.
-
-;; See URL `https://github.com/charliermarsh/ruff`."
-
-;;       :command ("python" "-m" "ruff" "check" "-q"  "--stdin-filename" source "-")
-;;       :standard-input t
-;;       :next-checkers ((warning . python-mypy))
-;;       :error-patterns
-;;       ((error line-start
-;; 	      (file-name) ":" line ":" column ": " (id)  (message)
-;; 	      line-end))
-;;       :modes python-mode)
-
-;;     (add-to-list 'flycheck-checkers 'python-ruff))
-;;   :hook
-;;   (elpy-mode . flycheck-mode)
-;;   (python-ts-mode . elpy-enable)
-;;   (python-mode . elpy-enable))
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  :hook
+  (elpy-mode . flycheck-mode)
+  (python-ts-mode . elpy-enable)
+  (python-mode . elpy-enable))
 
 (use-package jinja2-mode
   :defer 5)
 (use-package poetry
   :hook (python-mode . poetry-tracking-mode))
+
+(use-package python-pytest)
 
 (use-package python-black
   :hook (python-mode . python-black-on-save-mode))
@@ -528,18 +535,6 @@ See URL `https://github.com/charliermarsh/ruff`."
   (add-hook 'before-save-hook 'gofmt-before-save)
   :mode
   ("\\.go\\'"))
-
-(use-package eglot
-  :defer
-  :custom
-  (eldoc-echo-area-use-multiline-p t)
-  :bind
-  (
-   (:map eglot-mode-map
-	 ("C-c <tab>" .  #'company-complete) ; initiate the completion manually
-	 ;; ("C-c e f n" .  #'flymake-goto-next-error)
-	 ;; ("C-c e f p" .  #'flymake-goto-prev-error)
-	 ("C-c e r" .  #'eglot-rename))))
 
 (use-package lua-mode
   :mode
@@ -579,30 +574,45 @@ See URL `https://github.com/charliermarsh/ruff`."
   (evil-undo-system 'undo-tree)
   :init
   (evil-mode 1))
+
 (use-package evil-collection
   :after (evil)
   :init
   (evil-collection-init))
+
 (use-package evil-org
   :after (evil org)
   :init
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
+
 (use-package evil-paredit
+  :config
+  (evil-define-operator evil-paredit-delete
+    (beg end type register yank-handler)
+    "Delete text from BEG to END with TYPE respecting parenthesis.
+Save in REGISTER or in the kill-ring with YANK-HANDLER."
+    (interactive "<R><x><y>")
+    (evil-paredit-yank beg end type register yank-handler)
+    (if (eq type 'block)
+	(evil-apply-on-block #'delete-region beg end nil)
+      (delete-region beg end))
+    ;; place cursor on beginning of line
+    (when (and (called-interactively-p 'any)
+	       (eq type 'line))
+      (evil-first-non-blank)))
   :hook ((paredit-mode emacs-lisp-mode) .  evil-paredit-mode))
+
 (use-package goto-chg
   :after (evil))
 
 (use-package doom-themes
-  :if window-system
   :custom
   (doom-themes-enable-bold t)    ; if nil, bold is universally disabled
   (doom-themes-enable-italic t) ; if nil, italics is universally disabled
   :init
   (load-theme 'doom-monokai-classic t)
-  
   (doom-themes-visual-bell-config)
-
   ;; Enable custom neotree theme
   ;; all-the-icons fonts must be installed!
   (doom-themes-neotree-config))
@@ -611,6 +621,14 @@ See URL `https://github.com/charliermarsh/ruff`."
   :defer
   :bind
   (("C-s" . 'swiper)))
+
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (delete 'yaml treesit-auto-langs)
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
 
 (use-package ssh-config-mode
   :hook (ssh-config-mode . turn-on-font-lock)
@@ -623,5 +641,155 @@ See URL `https://github.com/charliermarsh/ruff`."
   :config
   (focus-autosave-mode 1))
 
+(use-package compile
+  :defer t
+  :hook ((compilation-filter . ansi-color-compilation-filter))
+  ;; Using C-u before recompile acts identical to the M-x compile
+  :bind (("C-x C-m" . recompile))
+  :config
+  (setopt compilation-scroll-output t)
+  (setopt compilation-ask-about-save nil)
+  (require 'ansi-color)
+  ;; Custom compilers
+  (defun generic-compiler ()
+    (concat "compiler "
+            (if buffer-file-name
+                (shell-quote-argument buffer-file-name))))
+
+  (defun run-on-file (cmd)
+    `(lambda () (concat ,cmd " "
+                        (shell-quote-argument buffer-file-name))))
+
+  (defvar custom-compiler-modes
+    `((purescript-mode . "spago run")
+      (vue-ts-mode    . "npx eslint --fix . && npx vue-tsc --noEmit")))
+
+  (defun get-compiler ()
+    (let* ((compiler (assoc-default major-mode
+                                    custom-compiler-modes
+                                    'eql nil)))
+      (cond ((or (file-exists-p "makefile")
+                 (file-exists-p "Makefile"))
+             "make -k ")
+            ((functionp compiler) (funcall compiler))
+            ((stringp compiler) compiler)
+            (t (funcall #'generic-compiler)))))
+
+  ;; A total hack I realized I could do thanks to M-x compile
+  ;; executing `(let ((command (eval compile-command))) ...)'
+  (setq-default compile-command '(get-compiler))
+
+  ;; Auto focus compilation buffer
+  (add-hook 'compilation-finish-functions 'finish-focus-comp)
+  (add-hook 'compilation-start-hook 'finish-focus-comp)
+
+  (defun finish-focus-comp (&optional buf-or-proc arg2)
+    (let* ((comp-buf (if (processp buf-or-proc)
+                         (process-buffer buf-or-proc)
+                       buf-or-proc))
+           (window (get-buffer-window comp-buf)))
+      (if window
+          (select-window window)
+        (switch-to-buffer-other-window comp-buf)))))
+
+(use-package lsp-mode
+  :ensure t
+  :defer t
+  :bind ((:map lsp-mode-map
+               ("M-<return>" . lsp-execute-code-action)))
+  :commands (lsp lsp-deferred)
+  :init
+  ;; Increase the amount of data emacs reads from processes
+  (setq read-process-output-max (* 3 1024 1024))
+  (setq lsp-clients-clangd-args
+	'("--header-insertion-decorators=0"
+          "--clang-tidy"
+          "--enable-config"))
+  ;; Small speedups
+  (setopt lsp-log-max 0)
+  (setopt lsp-log-io nil)
+  ;; General lsp-mode settings
+  (setq lsp-completion-provider :none
+        lsp-enable-snippet nil
+        lsp-enable-on-type-formatting nil
+        lsp-enable-indentation nil
+        lsp-diagnostics-provider :flycheck
+        lsp-keymap-prefix "C-x L"
+        lsp-eldoc-render-all t)
+  ;; to enable the lenses
+  (add-hook 'lsp-mode-hook #'lsp-lens-mode)
+  (add-hook 'lsp-completion-mode-hook
+            (lambda ()
+              (setf (alist-get 'lsp-capf completion-category-defaults)
+                    '((styles . (orderless))))))
+  :config
+  (use-package lsp-ui
+    :ensure t
+    :after lsp
+    :init
+    (setq lsp-ui-sideline-show-code-actions t)
+    (setq lsp-ui-sideline-show-diagnostics t)))
+
+(defun disable-tabs ()
+  "It's simple just disable tabs in the file."
+  (indent-tabs-mode -1))
+
+(add-hook 'web-mode-hook 'disable-tabs)
+(add-hook 'js-ts-mode-hook 'disable-tabs)
+(add-hook 'vue-ts-mode-hook 'disable-tabs)
+(add-hook 'tsx-ts-mode-hook 'disable-tabs)
+(add-hook 'typescript-ts-mode 'disable-tabs)
+
+(use-package eldoc
+  :defer 10
+  :init
+  (setopt eldoc-echo-area-display-truncation-message t)
+  (setopt eldoc-echo-area-use-multiline-p nil)
+  ;; Make sure Eldoc will show us all of the feedback at point.
+  ;; no more clobbering
+  (setopt eldoc-documentation-strategy #'eldoc-documentation-compose)
+  (global-eldoc-mode t))
+
+(use-package dired
+  :ensure nil
+  :defer
+  :commands (dired)
+  :hook ((dired-mode . hl-line-mode)
+         (dired-mode . dired-hide-details-mode))
+  :bind (:map dired-mode-map
+              ("-" . dired-up-directory))
+  :init
+  ;; let me drag files into other programs
+  (setq dired-mouse-drag-files t)
+  (setq dired-bind-jump nil)
+  :config
+  (setq dired-listing-switches "-agho --group-directories-first")
+;;;;; xdg-open integration
+  (require 'dired-x)
+  ;; prevent opening extra dired buffers
+  ;; emacs 28
+  (setq dired-kill-when-opening-new-dired-buffer t))
+
+(use-package docker
+  :ensure t
+  :bind (("C-c d" . docker)))
+
+(use-package popper
+  :ensure t ; or :straight t
+  :bind (("C-`"   . popper-toggle)
+         ("M-`"   . popper-cycle)
+         ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+        '("\\*Messages\\*"
+          "Output\\*$"
+          "\\*Async Shell Command\\*"
+	  ansible-doc-mode
+	  rst-mode
+	  helpful-mode
+          help-mode
+          compilation-mode))
+  (popper-mode +1)
+  (popper-echo-mode +1))      
 (provide 'init)
 ;;; init.el ends here

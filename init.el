@@ -6,7 +6,7 @@
       (init-gc-cons-threshold most-positive-fixnum)) 
   (setq gc-cons-threshold init-gc-cons-threshold)
   (add-hook 'emacs-startup-hook
-	    (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
+			(lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 (add-hook 'emacs-startup-hook
           (lambda ()
             (message "Emacs ready in %s with %d garbage collections."
@@ -28,26 +28,26 @@
 
 (mapc #'(lambda (add) (add-to-list 'load-path add))
       (eval-when-compile
-	(package-initialize)
-	;; Install use-package if not installed yet.
-	(unless (package-installed-p 'use-package)
-	  (package-refresh-contents)
-	  (package-install 'use-package))
-	(require 'use-package-ensure)
-	(setq use-package-always-ensure t)
-	;; (setq use-package-always-defer t)
-	(setq use-package-verbose t
-	      native-comp-async-report-warnings-errors nil)
-	(let ((package-user-dir-real (file-truename package-user-dir)))
-	  ;; The reverse is necessary, because outside we mapc
-	  ;; add-to-list element-by-element, which reverses.
-	  (nreverse (apply #'nconc
-			   ;; Only keep package.el provided loadpaths.
-			   (mapcar #'(lambda (path)
-				       (if (string-prefix-p package-user-dir-real path)
-					   (list path)
-					 nil))
-				   load-path))))))
+		(package-initialize)
+		;; Install use-package if not installed yet.
+		(unless (package-installed-p 'use-package)
+		  (package-refresh-contents)
+		  (package-install 'use-package))
+		(require 'use-package-ensure)
+		(setq use-package-always-ensure t)
+		;; (setq use-package-always-defer t)
+		(setq use-package-verbose t
+			  native-comp-async-report-warnings-errors nil)
+		(let ((package-user-dir-real (file-truename package-user-dir)))
+		  ;; The reverse is necessary, because outside we mapc
+		  ;; add-to-list element-by-element, which reverses.
+		  (nreverse (apply #'nconc
+						   ;; Only keep package.el provided loadpaths.
+						   (mapcar #'(lambda (path)
+									   (if (string-prefix-p package-user-dir-real path)
+										   (list path)
+										 nil))
+								   load-path))))))
 
 (setq initial-scratch-message ";; ready to work\n\n")
 
@@ -184,12 +184,12 @@
   (setq vertico-cycle t)
   (defun vertico-resize--minibuffer ()
     (add-hook 'window-size-change-functions
-	      (lambda (win)
-		(let ((height (window-height win)))
-		  (when (/= (1- height) vertico-count)
-		    (setq-local vertico-count (1- height))
-		    (vertico--exhibit))))
-	      t t))
+			  (lambda (win)
+				(let ((height (window-height win)))
+				  (when (/= (1- height) vertico-count)
+					(setq-local vertico-count (1- height))
+					(vertico--exhibit))))
+			  t t))
 
   (advice-add #'vertico--setup :before #'vertico-resize--minibuffer)
   )
@@ -204,13 +204,13 @@
   ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
   ;;       orderless-component-separator #'orderless-escapable-split-on-space)
   (setq completion-styles '(orderless basic)
-	completion-category-defaults nil
-	completion-category-overrides '((file (styles partial-completion))))
+		completion-category-defaults nil
+		completion-category-overrides '((file (styles partial-completion))))
 
   :config
   (defun orderless-fast-dispatch (word index total)
-    (and (= index 0) (= total 1) (length< word 3)
-	 `(orderless-regexp . ,(concat "^" (regexp-quote word)))))
+    (and (= index 0) (= total 1) (length< word 2)
+		 `(orderless-regexp . ,(concat "^" (regexp-quote word)))))
 
   (orderless-define-completion-style orderless-fast
     (orderless-style-dispatchers '(orderless-fast-dispatch))
@@ -287,25 +287,25 @@
   (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
   :bind
   (:map corfu-map
-	("M-SPC"      . corfu-insert-separator)
-	("TAB"        . corfu-next)
-	([tab]        . corfu-next)
-	("S-TAB"      . corfu-previous)
-	([backtab]    . corfu-previous)
-	("S-<return>" . corfu-insert)
-	("RET"        . nil))
+		("M-SPC"      . corfu-insert-separator)
+		("TAB"        . corfu-next)
+		([tab]        . corfu-next)
+		("S-TAB"      . corfu-previous)
+		([backtab]    . corfu-previous)
+		("S-<return>" . corfu-insert)
+		("RET"        . nil))
   :init
   (global-corfu-mode)
   (corfu-history-mode)
   (corfu-popupinfo-mode)
   :config
   (add-hook 'eshell-mode-hook
-	    (lambda () (setq-local corfu-quit-at-boundary t
-				   corfu-quit-no-match t
-				   corfu-auto nil)
-	      (corfu-mode))
-	    nil
-	    t)
+			(lambda () (setq-local corfu-quit-at-boundary t
+								   corfu-quit-no-match t
+								   corfu-auto nil)
+			  (corfu-mode))
+			nil
+			t)
   )
 
 (use-package cape
@@ -374,10 +374,10 @@
   :defer
   :after (cape)
   :hook (ansible .
-		 (lambda ()
-		   (add-to-list
-		    'completion-at-point-functions
-		    (cape-company-to-capf 'company-ansible))))
+				 (lambda ()
+				   (add-to-list
+					'completion-at-point-functions
+					(cape-company-to-capf 'company-ansible))))
   :config
   (add-to-list 'company-backends 'company-ansible))
 
@@ -397,15 +397,15 @@
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
   :bind (("C-h f"	. helpful-callable)
-	 ("C-h F"	. helpful-function)
-	 ("C-h v"	. helpful-variable)
-	 ("C-h k"	. helpful-key)
-	 ("C-c C-d"	. helpful-at-point)
-	 ("C-h C"	. helpful-command)))
+		 ("C-h F"	. helpful-function)
+		 ("C-h v"	. helpful-variable)
+		 ("C-h k"	. helpful-key)
+		 ("C-c C-d"	. helpful-at-point)
+		 ("C-h C"	. helpful-command)))
 
 (use-package drag-stuff
   :bind (("M-<up>" . drag-stuff-up)
-	 ("M-<down>" . drag-stuff-down)))
+		 ("M-<down>" . drag-stuff-down)))
 
 (use-package reverse-im
   :custom
@@ -421,9 +421,9 @@
   (projectile-mode +1)
   (setq projectile-track-known-projects-automatically t)
   :bind (("<f5>" . projectile-compile-project)
-	 :map projectile-mode-map
-	 ("s-p" . projectile-command-map)
-	 ("C-c p" . projectile-command-map)))
+		 :map projectile-mode-map
+		 ("s-p" . projectile-command-map)
+		 ("C-c p" . projectile-command-map)))
 
 (use-package multiple-cursors
   :bind
@@ -589,18 +589,18 @@
 (use-package evil-paredit
   :config
   (evil-define-operator evil-paredit-delete
-    (beg end type register yank-handler)
-    "Delete text from BEG to END with TYPE respecting parenthesis.
+						(beg end type register yank-handler)
+						"Delete text from BEG to END with TYPE respecting parenthesis.
 Save in REGISTER or in the kill-ring with YANK-HANDLER."
-    (interactive "<R><x><y>")
-    (evil-paredit-yank beg end type register yank-handler)
-    (if (eq type 'block)
-	(evil-apply-on-block #'delete-region beg end nil)
-      (delete-region beg end))
-    ;; place cursor on beginning of line
-    (when (and (called-interactively-p 'any)
-	       (eq type 'line))
-      (evil-first-non-blank)))
+						(interactive "<R><x><y>")
+						(evil-paredit-yank beg end type register yank-handler)
+						(if (eq type 'block)
+							(evil-apply-on-block #'delete-region beg end nil)
+						  (delete-region beg end))
+						;; place cursor on beginning of line
+						(when (and (called-interactively-p 'any)
+								   (eq type 'line))
+						  (evil-first-non-blank)))
   :hook ((paredit-mode emacs-lisp-mode) .  evil-paredit-mode))
 
 (use-package goto-chg
@@ -633,9 +633,9 @@ Save in REGISTER or in the kill-ring with YANK-HANDLER."
 (use-package ssh-config-mode
   :hook (ssh-config-mode . turn-on-font-lock)
   :mode (("/\\.ssh/config\\(\\.d/.*\\.conf\\)?\\'" . ssh-config-mode)
-	 ("/sshd?_config\\(\\.d/.*\\.conf\\)?\\'"  . ssh-config-mode)
-	 ("/known_hosts\\'"       . ssh-known-hosts-mode)
-	 ("/authorized_keys2?\\'" . ssh-authorized-keys-mode)))
+		 ("/sshd?_config\\(\\.d/.*\\.conf\\)?\\'"  . ssh-config-mode)
+		 ("/known_hosts\\'"       . ssh-known-hosts-mode)
+		 ("/authorized_keys2?\\'" . ssh-authorized-keys-mode)))
 
 (use-package focus-autosave-mode
   :config
@@ -692,44 +692,6 @@ Save in REGISTER or in the kill-ring with YANK-HANDLER."
           (select-window window)
         (switch-to-buffer-other-window comp-buf)))))
 
-(use-package lsp-mode
-  :ensure t
-  :defer t
-  :bind ((:map lsp-mode-map
-               ("M-<return>" . lsp-execute-code-action)))
-  :commands (lsp lsp-deferred)
-  :init
-  ;; Increase the amount of data emacs reads from processes
-  (setq read-process-output-max (* 3 1024 1024))
-  (setq lsp-clients-clangd-args
-	'("--header-insertion-decorators=0"
-          "--clang-tidy"
-          "--enable-config"))
-  ;; Small speedups
-  (setopt lsp-log-max 0)
-  (setopt lsp-log-io nil)
-  ;; General lsp-mode settings
-  (setq lsp-completion-provider :none
-        lsp-enable-snippet nil
-        lsp-enable-on-type-formatting nil
-        lsp-enable-indentation nil
-        lsp-diagnostics-provider :flycheck
-        lsp-keymap-prefix "C-x L"
-        lsp-eldoc-render-all t)
-  ;; to enable the lenses
-  (add-hook 'lsp-mode-hook #'lsp-lens-mode)
-  (add-hook 'lsp-completion-mode-hook
-            (lambda ()
-              (setf (alist-get 'lsp-capf completion-category-defaults)
-                    '((styles . (orderless))))))
-  :config
-  (use-package lsp-ui
-    :ensure t
-    :after lsp
-    :init
-    (setq lsp-ui-sideline-show-code-actions t)
-    (setq lsp-ui-sideline-show-diagnostics t)))
-
 (defun disable-tabs ()
   "It's simple just disable tabs in the file."
   (indent-tabs-mode -1))
@@ -784,12 +746,255 @@ Save in REGISTER or in the kill-ring with YANK-HANDLER."
         '("\\*Messages\\*"
           "Output\\*$"
           "\\*Async Shell Command\\*"
-	  ansible-doc-mode
-	  rst-mode
-	  helpful-mode
+		  ansible-doc-mode
+		  rst-mode
+		  helpful-mode
           help-mode
           compilation-mode))
   (popper-mode +1)
-  (popper-echo-mode +1))      
+  (popper-echo-mode +1))
+
+(use-package org
+  :ensure t
+  :defer 5
+  :hook
+  (org-agenda-mode . (lambda () (hl-line-mode 1)))
+  (org-mode . visual-line-mode)
+  (org-mode . (lambda () (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))))
+  :bind
+  (("C-c n y" . org-id-get-create)
+   ("C-c l"   . org-store-link)
+   ("C-c a"   . org-agenda)
+   ("<f12>" . org-agenda)
+   ("C-c c"   . org-capture))
+  :config
+  ;; hl-line
+  (require 'hl-line)
+  (set-face-background 'hl-line "red")
+  ;; end hl-line
+  (setq org-directory "~/org")
+  (setq org-default-notes-file "~/org/inbox.org")
+  
+  (setq org-catch-invisible-edits 'smart)
+  (setq org-return-follows-link t)
+  (set-inbox-buffers)
+  (setq org-capture-templates
+		(quote (("t" "Todo [inbox]" entry (file+headline "~/org/inbox.org" "inbox")
+				 "* TODO %i%?")
+				("е" "Todo [inbox]" entry (file+headline "~/org/inbox.org" "inbox")
+				 "* TODO %i%?")
+				("j" "Journal" entry (file+datetree "~/org/diary.org")
+				 "* %?\n%U\n"))))
+
+  ;; Do not dim blocked tasks
+  (setq org-agenda-dim-blocked-tasks nil)
+  ;; Compact the block agenda view
+  (setq org-agenda-compact-blocks t)
+  (setq org-todo-keywords '((sequence "TODO(t)" "WAITING(w)" "|" "DONE(d)" "CANCELLED(c)")))
+
+  (when termux-p
+    (add-to-list 'org-file-apps '("\\.pdf\\'" . "termux-open %s"))
+    (add-to-list 'org-file-apps '("\\.png\\'" . "termux-open %s"))
+    (add-to-list 'org-file-apps '("\\.jpg\\'" . "termux-open %s"))
+    (add-to-list 'org-file-apps '("\\.jpeg\\'" . "termux-open %s")))
+
+  ;; Custom agenda command definitions
+  (setq org-agenda-custom-commands
+		(quote (
+				("i" "inbox" tags-todo "inbox"
+				 ((org-agenda-overriding-header "inbox")))
+				("ш" "inbox" tags-todo "inbox"
+				 ((org-agenda-overriding-header "inbox")))
+				(" " "Текущие дела" tags-todo "todo"
+				 ((org-agenda-overriding-header "Текущие дела")))
+				)))
+  (setq org-use-fast-todo-selection t)	; C-c C-t
+  (setq org-treat-S-cursor-todo-selection-as-state-change nil)
+  (setq org-refile-targets
+		(quote (
+				("~/org/todo.org"		:maxlevel . 3)
+				("~/org/calendar.org"	:maxlevel . 2)
+				("~/org/waiting.org"	        :maxlevel . 2)
+				("~/org/someday.org"		:maxlevel . 2)
+				("~/org/inbox.org"		:maxlevel . 1)
+				("~/org/garbage.org"		:maxlevel . 1)
+				("~/org/projects.org"        :maxlevel . 2))))
+
+										; Use full outline paths for refile targets - we file directly with IDO
+  (setq org-refile-use-outline-path t)
+
+										; Targets complete directly with IDO
+  (setq org-outline-path-complete-in-steps nil)
+
+										; Allow refile to create parent tasks with confirmation
+  (setq org-refile-allow-creating-parent-nodes (quote confirm))
+
+										; Use IDO for both buffer and file completion and ido-everywhere to t
+  (setq org-completion-use-ido t)
+  (setq org-indirect-buffer-display 'current-window)
+
+;;;; Refile settings
+										; Exclude DONE state tasks from refile targets
+  (defun bh/verify-refile-target ()
+    "Exclude todo keywords with a done state from refile targets"
+    (not (member (nth 2 (org-heading-components)) org-done-keywords)))
+
+  (setq org-refile-target-verify-function 'bh/verify-refile-target)
+  (run-at-time "00:59" 3600 'org-save-all-org-buffers)
+  (setq org-edit-src-content-indentation 0)
+  (setq org-confirm-babel-evaluate nil)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((latex . t)
+     (emacs-lisp . t)
+     (lisp . t)
+     (lua . t)
+     (shell . t)
+     (scheme . t)
+     (octave . t)
+     (python . t)))
+  (font-lock-add-keywords
+   'org-mode
+   '(("^ *\\([-]\\) "
+      (0 (prog1 () (compose-region
+					(match-beginning 1) (match-end 1) "•")))))))
+
+
+(use-package org-roam
+  :commands (org-roam-buffer-toggle org-roam-node-find org-roam-graph org-roam-capture org-roam-node-insert org-roam-tag-add org-roam-alias-add org-roam-ref-add)
+  :hook
+  (org-mode . org-roam-db-autosync-mode)
+  :bind (
+		 ("C-c n l" . org-roam-buffer-toggle)
+		 ("C-c n f" . org-roam-node-find)
+		 ("C-c n g" . org-roam-graph)
+		 ("C-c n c" . org-roam-capture)
+		 ("C-c n i" . org-roam-node-insert)
+		 ("C-c n t" . org-roam-tag-add)
+		 ("C-c n a" . org-roam-alias-add)
+		 ("C-c n r" . org-roam-ref-add)
+		 :map org-mode-map
+		 ("C-M-i" . completion-at-point))
+  :custom
+  (org-roam-v2-ack t)
+  (org-roam-capture-templates
+   '(
+     ("d" "default" plain "%?"
+      :target (file+head "%<%Y%m%d%H%M%S>.org"
+						 "#+title: ${title}\n* COMMENT References                                                      :TODO:\n")
+      :unnarrowed t)
+     
+     ("в" "default" plain "%?"
+      :target (file+head "%<%Y%m%d%H%M%S>.org"
+						 "#+title: ${title}\n* COMMENT References                                                      :TODO:\n")
+      :unnarrowed t)
+     ))
+  (org-roam-directory (file-truename "~/org-roam"))
+  (org-roam-completion-everywhere t)
+  :config
+  (add-to-list 'display-buffer-alist
+               '("\\*org-roam\\*"
+				 (display-buffer-in-direction)
+				 (direction . right)
+				 (window-width . 0.33)
+				 (window-height . fit-window-to-buffer)))
+  )
+
+(use-package org-roam-ui
+  :after (org-mode org-roam)
+  :defer 2
+  :custom
+  (org-roam-ui-sync-theme t)
+  (org-roam-ui-follow t)
+  (org-roam-ui-update-on-save t)
+  (org-roam-ui-open-on-start nil)
+  (org-roam-ui-custom-theme
+   '((bg . "#1E2029")
+     (bg-alt . "#282a36")
+     (fg . "#f8f8f2")
+     (fg-alt . "#6272a4")
+     (red . "#ff5555")
+     (orange . "#f1fa8c")
+     (yellow ."#ffb86c")
+     (green . "#50fa7b")
+     (cyan . "#8be9fd")
+     (blue . "#ff79c6")
+     (violet . "#8be9fd")
+     (magenta . "#bd93f9"))))
+
+(use-package org-download
+  :after (org)
+  :hook
+  (dired-mode . org-download-enable)
+  :custom
+  (org-download-image-dir "~/org/files/images/")
+  :bind
+  (:map org-mode-map
+        (("C-c n s s" . org-download-screenshot)
+		 ("C-c n s d" . org-download-delete)
+         ("C-c n s y" . org-download-yank))))
+
+(use-package org-modern
+  :hook (org-mode . org-modern-mode))
+
+(use-package eglot
+  :ensure nil
+  :hook ((go-mode python-mode) . (lambda () (eglot-ensure) (flycheck-eglot-mode) (company-mode 0)))
+  :bind (:map eglot-mode-map
+			  ("C-c r" . eglot-rename)
+			  ("C-c o" . eglot-code-action-organize-imports)
+			  ("C-c h" . eldoc)
+			  )
+  :custom
+  (eglot-autoshutdown t)
+  (eglot-inlay-hints-mode t)
+  (eglot-events-buffer-size 0)
+  (eglot-extend-to-xref nil)
+  (eldoc-echo-area-use-multiline-p 5)
+  (eglot-stay-out-of '(yasnippet))
+  (eglot-ignored-server-capabilities
+   '(:hoverProvider
+     :documentHighlightProvider
+     :documentFormattingProvider
+     :documentRangeFormattingProvider
+     :documentOnTypeFormattingProvider
+     :colorProvider
+     :foldingRangeProvider))
+  :config
+  (setq-default
+   eglot-workspace-configuration
+   '((:gopls .
+			 (
+			  ;; (gofumpt . t)
+			  (usePlaceholders . t)
+			  ;; (staticcheck . t)
+			  (hints . (
+						(assignVariableTypes . t)
+						(compositeLiteralFields . t)
+						(compositeLiteralTypes . t)
+						(constantValues . t)
+						(functionTypeParameters . t)
+						(parameterNames . t)
+						(rangeVariableTypes . t)))
+			  ))))
+  
+  (require 'project)
+
+  (defun project-find-go-module (dir)
+	(when-let ((root (locate-dominating-file dir "go.mod")))
+      (cons 'go-module root)))
+
+  (cl-defmethod project-root ((project (head go-module)))
+	(cdr project))
+
+  (add-hook 'project-find-functions #'project-find-go-module)
+  )
+
+(use-package flycheck-eglot
+  :after (flycheck eglot)
+  :init
+  (global-flycheck-eglot-mode 1))
+
+
 (provide 'init)
 ;;; init.el ends here
